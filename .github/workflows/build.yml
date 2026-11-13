@@ -1,26 +1,17 @@
-name: Build PS2
+name: build
 
-# รันอัตโนมัติทุกครั้งที่บันทึกไฟล์ (commit) และกดรันเองได้จากแท็บ Actions
 on:
-  push:
-  workflow_dispatch:
+push:
+workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    # อิมเมจที่ติดตั้งเครื่องมือ PS2 ไว้ครบแล้ว (PS2SDK, gsKit, คอมไพเลอร์)
-    container: ps2dev/ps2dev:latest
-    steps:
-      - name: Install tools
-        run: apk add --no-cache build-base git
-
-      - uses: actions/checkout@v4
-
-      - name: Build
-        run: make
-
-      - name: Upload ELF
-        uses: actions/upload-artifact@v4
-        with:
-          name: ps2-starter
-          path: "*.elf"
+build:
+runs-on: ubuntu-latest
+container: ps2dev/ps2dev:latest
+steps:
+- uses: actions/checkout@v4
+- run: make
+- uses: actions/upload-artifact@v4
+with:
+name: ps2-fps-demo
+path: main.elf
