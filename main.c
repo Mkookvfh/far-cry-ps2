@@ -14,6 +14,8 @@
 #include <graph.h>
 #include <packet.h>
 
+#include "src/game/player_movement.h"
+
 #define SCREEN_W 640
 #define SCREEN_H 448
 #define ISLAND_MIN_X 112.0f
@@ -398,11 +400,12 @@ int main(void)
     dma_channel_fast_waits(DMA_CHANNEL_GIF);
     init_graphics(&frame, &z, packet);
 
-    float player_x = (ISLAND_MIN_X + ISLAND_MAX_X) * 0.5f;
-    float player_z = (ISLAND_MIN_Z + ISLAND_MAX_Z) * 0.5f;
+    PlayerMoveState move_state;
+    move_state.x = (ISLAND_MIN_X + ISLAND_MAX_X) * 0.5f;
+    move_state.z = (ISLAND_MIN_Z + ISLAND_MAX_Z) * 0.5f;
+    move_state.stamina = 100.0f;
     float camera_yaw = 0.0f;
     float camera_pitch = 0.0f;
-    float stamina = 100.0f;
     int mission_stage = 0;
     printf("Island of Ashes - 3D island exploration prototype\n");
     printf("D-pad / left stick: move | right stick: 360-degree look | R1: sprint\n");
@@ -448,11 +451,6 @@ int main(void)
             if (abs(ry - 128) < 18) look_y = 0.0f;
         }
 
-        if (move_x != 0.0f && move_z != 0.0f) {
-            move_x *= 0.7071f;
-            move_z *= 0.7071f;
-        }
-
         /* Right stick changes the view; movement follows the facing direction. */
         camera_yaw += look_x * 1.8f;
         camera_pitch += look_y * 1.2f;
@@ -461,25 +459,14 @@ int main(void)
         if (camera_pitch < -65.0f) camera_pitch = -65.0f;
         if (camera_pitch > 65.0f) camera_pitch = 65.0f;
 
-        float yaw_radians = camera_yaw * 0.0174532925f;
-        float world_dx = move_x * cosf(yaw_radians) - move_z * sinf(yaw_radians);
-        float world_dz = move_x * sinf(yaw_radians) + move_z * cosf(yaw_radians);
-        int moving = (move_x != 0.0f || move_z != 0.0f);
-        int sprinting = sprint_requested && moving && stamina > 0.0f;
-        float move_speed = sprinting ? 3.2f : 2.0f;
-        if (sprinting) {
-            stamina -= 0.55f;
-            if (stamina < 0.0f) stamina = 0.0f;
-        } else {
-            stamina += 0.24f;
-            if (stamina > 100.0f) stamina = 100.0f;
-        }
-        player_x += world_dx * move_speed;
-        player_z += world_dz * move_speed;
-        if (player_x < ISLAND_MIN_X) player_x = ISLAND_MIN_X;
-        if (player_x > ISLAND_MAX_X) player_x = ISLAND_MAX_X;
-        if (player_z < ISLAND_MIN_Z) player_z = ISLAND_MIN_Z;
-        if (player_z > ISLAND_MAX_Z) player_z = ISLAND_MAX_Z;
+        /* Quake-style engine architecture: movement is isolated from rendering/input. */
+        player_move_update(&move_state, move_x, move_z, camera_yaw,
+                           sprint_requested,
+                           ISLAND_MIN_X, ISLAND_MAX_X,
+                           ISLAND_MIN_Z, ISLAND_MAX_Z);
+        float player_x = move_state.x;
+        float player_z = move_state.z;
+        float stamina = move_state.stamina;
 
         /* Three checkpoint trail; reaching each beacon advances the objective. */
         if (mission_stage < 3) {
