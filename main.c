@@ -213,7 +213,7 @@ static void add_village(void)
     add_roof(401.0f,y2+16.0f,252.0f,44.0f,14.0f,36.0f);
     float yt=terrain_height(500.0f,190.0f);
     add_box(500.0f,yt,190.0f,5.0f,42.0f,5.0f,126,88,48);
-    add_box(486.0f,yt+34.0f,184.0ff,32.0f,4.0f,18.0f,142,104,62);
+    add_box(486.0f,yt+34.0f,184.0f,32.0f,4.0f,18.0f,142,104,62);
     add_box(486.0f,yt+42.0f,184.0f,32.0f,3.0f,18.0f,98,70,44);
 }
 
@@ -449,8 +449,8 @@ int main(void)
         if (camera_pitch > 65.0f) camera_pitch = 65.0f;
 
         float yaw_radians = camera_yaw * 0.0174532925f;
-        float world_dx = move_x * cosf(yaw_radians) + move_z * sinf(yaw_radians);
-        float world_dz = -move_x * sinf(yaw_radians) - move_z * cosf(yaw_radians);
+        float world_dx = move_x * cosf(yaw_radians) - move_z * sinf(yaw_radians);
+        float world_dz = move_x * sinf(yaw_radians) + move_z * cosf(yaw_radians);
         int moving = (move_x != 0.0f || move_z != 0.0f);
         int sprinting = sprint_requested && moving && stamina > 0.0f;
         float move_speed = sprinting ? 3.2f : 2.0f;
