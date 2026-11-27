@@ -15,6 +15,7 @@
 #include <packet.h>
 
 #include "src/game/player_movement.h"
+#include "src/game/player_collision.h"
 
 #define SCREEN_W 640
 #define SCREEN_H 448
@@ -137,20 +138,6 @@ static void add_box(float x, float y, float z, float w, float h, float d,
              (unsigned char)(blue*1.08f>255?255:blue*1.08f));
 }
 
-static float terrain_height(float x, float z)
-{
-    float nx = (x - 320.0f) / 218.0f;
-    float nz = (z - 224.0f) / 164.0f;
-    float d = nx*nx + nz*nz;
-    float hill = 24.0f * (1.0f - d);
-    float peak_dx = (x - 310.0f) / 76.0f;
-    float peak_dz = (z - 148.0f) / 58.0f;
-    float peak = 17.0f * expf(-(peak_dx*peak_dx + peak_dz*peak_dz));
-    if (d > 1.0f) return -2.5f;
-    if (hill < 0.0f) hill = 0.0f;
-    return 1.5f + hill + peak;
-}
-
 static void add_terrain(void)
 {
     int ix, iz;
@@ -168,7 +155,7 @@ static void add_terrain(void)
             float h;
             unsigned char r,g,blue;
             if (d > 1.28f) continue;
-            a=vec3(x,terrain_height(x,z),z);
+            a=vec3(x,island_ground_height(x,z),z);
             b=vec3(x+step_x,terrain_height(x+step_x,z),z);
             c=vec3(x+step_x,terrain_height(x+step_x,z+step_z),z+step_z);
             e=vec3(x,terrain_height(x,z+step_z),z+step_z);
@@ -459,11 +446,15 @@ int main(void)
         if (camera_pitch < -65.0f) camera_pitch = -65.0f;
         if (camera_pitch > 65.0f) camera_pitch = 65.0f;
 
-        /* Quake-style engine architecture: movement is isolated from rendering/input. */
+        /* Engine-style update: input, movement, then world collision/ground query. */
+        float previous_x = move_state.x;
+        float previous_z = move_state.z;
         player_move_update(&move_state, move_x, move_z, camera_yaw,
                            sprint_requested,
                            ISLAND_MIN_X, ISLAND_MAX_X,
                            ISLAND_MIN_Z, ISLAND_MAX_Z);
+        island_resolve_player(&move_state, previous_x, previous_z, 3.0f);
+        /* Ground height is queried by the camera and scene from the shared terrain module. */
         float player_x = move_state.x;
         float player_z = move_state.z;
         float stamina = move_state.stamina;
