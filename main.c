@@ -47,7 +47,7 @@ static void init_graphics(framebuffer_t *frame, zbuffer_t *z, packet_t *packet)
     draw_wait_finish();
 }
 
-/* Draw one solid screen-space rectangle using a GS triangle strip. */
+/* Screen-space color block used to build a simple PS2-era scene. */
 static qword_t *draw_rect(qword_t *q, int x1, int y1, int x2, int y2,
                           unsigned char r, unsigned char g, unsigned char b)
 {
@@ -70,45 +70,92 @@ static void render_scene(packet_t *packet, framebuffer_t *frame,
                          float player_x, float player_z)
 {
     qword_t *q;
-    int px = (int)player_x;
-    int pz = (int)player_z;
+    int camera_shift = ((int)player_x - 320) / 12;
+    int depth_shift = ((int)player_z - 224) / 18;
 
     dma_wait_fast();
     q = packet->data;
-    q = draw_clear(q, 12, 76, 126, frame->width, frame->height, 0, 0, 0);
 
-    /* Beach and layered green terrain make a simple readable island map. */
-    q = draw_rect(q, 104, 64, 536, 384, 208, 178, 104);
-    q = draw_rect(q, 124, 84, 516, 364, 52, 142, 72);
-    q = draw_rect(q, 156, 108, 484, 340, 42, 126, 64);
-    q = draw_rect(q, 196, 136, 444, 312, 35, 112, 58);
-    q = draw_rect(q, 244, 164, 396, 284, 70, 156, 78);
+    /* Sky, distant sea and bright tropical horizon. */
+    q = draw_clear(q, 86, 178, 226, frame->width, frame->height, 0, 0, 0);
+    q = draw_rect(q, 0, 0, 640, 190, 86, 178, 226);
+    q = draw_rect(q, 0, 170, 640, 248, 32, 142, 190);
+    q = draw_rect(q, 0, 220, 640, 266, 22, 118, 164);
 
-    /* A winding river/clearing and a small village landmark. */
-    q = draw_rect(q, 296, 104, 326, 344, 56, 156, 190);
-    q = draw_rect(q, 270, 286, 370, 316, 56, 156, 190);
-    q = draw_rect(q, 174, 178, 206, 210, 142, 104, 70);
-    q = draw_rect(q, 212, 178, 244, 210, 142, 104, 70);
-    q = draw_rect(q, 174, 216, 206, 248, 142, 104, 70);
-    q = draw_rect(q, 212, 216, 244, 248, 142, 104, 70);
+    /* Distant island ridge and mountain silhouettes. */
+    q = draw_rect(q, 0, 152, 118, 220, 48, 112, 94);
+    q = draw_rect(q, 66, 126, 176, 220, 42, 104, 82);
+    q = draw_rect(q, 132, 146, 248, 220, 38, 96, 76);
+    q = draw_rect(q, 216, 112, 330, 220, 44, 108, 86);
+    q = draw_rect(q, 296, 132, 416, 220, 38, 98, 76);
+    q = draw_rect(q, 390, 148, 520, 220, 44, 106, 82);
+    q = draw_rect(q, 488, 126, 640, 220, 38, 94, 72);
+    q = draw_rect(q, 220, 92, 280, 164, 94, 126, 132);
+    q = draw_rect(q, 252, 72, 314, 164, 112, 142, 146);
+    q = draw_rect(q, 286, 104, 352, 164, 82, 116, 122);
 
-    /* Palm-tree silhouettes: trunks and simple leaf canopies. */
-    q = draw_rect(q, 146, 128, 154, 158, 112, 78, 42);
-    q = draw_rect(q, 128, 120, 172, 130, 28, 92, 48);
-    q = draw_rect(q, 136, 112, 164, 122, 36, 108, 52);
-    q = draw_rect(q, 454, 126, 462, 156, 112, 78, 42);
-    q = draw_rect(q, 436, 118, 480, 128, 28, 92, 48);
-    q = draw_rect(q, 444, 110, 472, 120, 36, 108, 52);
-    q = draw_rect(q, 420, 286, 428, 316, 112, 78, 42);
-    q = draw_rect(q, 402, 278, 446, 288, 28, 92, 48);
-    q = draw_rect(q, 410, 270, 438, 280, 36, 108, 52);
+    /* Jungle line and palms framing the path. */
+    q = draw_rect(q, 0, 202, 142, 286, 24, 92, 48);
+    q = draw_rect(q, 498, 198, 640, 288, 22, 88, 46);
+    q = draw_rect(q, 24 - camera_shift, 156, 42 - camera_shift, 292,
+                  112, 76, 38);
+    q = draw_rect(q, 0 - camera_shift, 148, 92 - camera_shift, 168,
+                  28, 112, 50);
+    q = draw_rect(q, 42 - camera_shift, 136, 120 - camera_shift, 154,
+                  36, 126, 56);
+    q = draw_rect(q, 570 - camera_shift, 148, 588 - camera_shift, 292,
+                  112, 76, 38);
+    q = draw_rect(q, 520 - camera_shift, 140, 640 - camera_shift, 160,
+                  28, 112, 50);
+    q = draw_rect(q, 500 - camera_shift, 128, 590 - camera_shift, 148,
+                  36, 126, 56);
 
-    /* Player marker and a compact status panel. */
-    q = draw_rect(q, px - 7, pz - 7, px + 7, pz + 7, 250, 236, 96);
-    q = draw_rect(q, 18, 18, 184, 30, 18, 44, 66);
-    q = draw_rect(q, 22, 22, 142, 26, 80, 198, 116);
-    q = draw_rect(q, 18, 36, 184, 48, 18, 44, 66);
-    q = draw_rect(q, 22, 40, 110, 44, 224, 178, 74);
+    /* Sandy trail: stacked perspective bands widen toward the player. */
+    q = draw_rect(q, 292 + camera_shift / 3, 218, 348 + camera_shift / 3,
+                  250, 178, 148, 96);
+    q = draw_rect(q, 270 + camera_shift / 3, 250, 370 + camera_shift / 3,
+                  286, 188, 156, 102);
+    q = draw_rect(q, 238 + camera_shift / 3, 286, 402 + camera_shift / 3,
+                  326, 194, 162, 108);
+    q = draw_rect(q, 196 + camera_shift / 3, 326, 444 + camera_shift / 3,
+                  370, 202, 170, 114);
+    q = draw_rect(q, 140 + camera_shift / 3, 370, 500 + camera_shift / 3,
+                  448, 210, 178, 120);
+
+    /* Small village huts and a lookout tower in the distance. */
+    q = draw_rect(q, 156 - camera_shift, 218 + depth_shift,
+                  218 - camera_shift, 254 + depth_shift, 124, 92, 58);
+    q = draw_rect(q, 164 - camera_shift, 208 + depth_shift,
+                  210 - camera_shift, 220 + depth_shift, 96, 62, 42);
+    q = draw_rect(q, 420 - camera_shift, 214 + depth_shift,
+                  486 - camera_shift, 254 + depth_shift, 132, 98, 62);
+    q = draw_rect(q, 426 - camera_shift, 204 + depth_shift,
+                  480 - camera_shift, 218 + depth_shift, 98, 64, 42);
+    q = draw_rect(q, 526 - camera_shift, 164, 538 - camera_shift, 250,
+                  92, 66, 44);
+    q = draw_rect(q, 508 - camera_shift, 154, 556 - camera_shift, 166,
+                  104, 76, 48);
+    q = draw_rect(q, 504 - camera_shift, 150, 560 - camera_shift, 156,
+                  72, 52, 36);
+
+    /* First-person HUD: crosshair, objective, minimap and status bars. */
+    q = draw_rect(q, 316, 222, 324, 224, 238, 238, 228);
+    q = draw_rect(q, 319, 218, 321, 228, 238, 238, 228);
+    q = draw_rect(q, 18, 18, 244, 68, 12, 34, 48);
+    q = draw_rect(q, 28, 28, 44, 44, 244, 192, 54);
+    q = draw_rect(q, 52, 26, 218, 34, 242, 242, 236);
+    q = draw_rect(q, 52, 42, 190, 50, 222, 222, 214);
+
+    q = draw_rect(q, 548, 18, 622, 92, 14, 38, 50);
+    q = draw_rect(q, 556, 26, 614, 84, 42, 116, 82);
+    q = draw_rect(q, 580, 48, 590, 62, 250, 230, 84);
+    q = draw_rect(q, 582, 36, 588, 74, 250, 230, 84);
+    q = draw_rect(q, 18, 386, 224, 430, 12, 34, 48);
+    q = draw_rect(q, 30, 398, 202, 408, 190, 48, 48);
+    q = draw_rect(q, 30, 414, 168, 424, 50, 156, 218);
+    q = draw_rect(q, 420, 386, 622, 430, 12, 34, 48);
+    q = draw_rect(q, 434, 398, 602, 408, 228, 184, 70);
+    q = draw_rect(q, 434, 414, 560, 424, 190, 190, 182);
 
     q = draw_finish(q);
     dma_channel_send_normal(DMA_CHANNEL_GIF, packet->data,
@@ -150,8 +197,8 @@ int main(void)
 
     float player_x = (ISLAND_MIN_X + ISLAND_MAX_X) * 0.5f;
     float player_z = (ISLAND_MIN_Z + ISLAND_MAX_Z) * 0.5f;
-    printf("Island of Ashes - PS2 island exploration prototype\n");
-    printf("D-pad / left stick: move around the island\n");
+    printf("Island of Ashes - first-person island exploration prototype\n");
+    printf("D-pad / left stick: move the first-person camera\n");
 
     struct padButtonStatus pad;
     while (1) {
@@ -173,7 +220,6 @@ int main(void)
             else if (ly > 160) move_z = 1.0f;
         }
 
-        /* Keep diagonal movement at the same speed as straight movement. */
         if (move_x != 0.0f && move_z != 0.0f) {
             move_x *= 0.7071f;
             move_z *= 0.7071f;
