@@ -32,10 +32,12 @@ static void init_graphics(framebuffer_t *frame, zbuffer_t *z, packet_t *packet)
     frame->address = graph_vram_allocate(frame->width, frame->height,
                                          frame->psm, GRAPH_ALIGN_PAGE);
 
-    z->enable = 0;
-    z->address = 0;
+    z->enable = DRAW_ENABLE;
+    z->method = ZTEST_METHOD_GREATER_EQUAL;
+    z->address = graph_vram_allocate(frame->width, frame->height,
+                                     GS_PSMZ_32, GRAPH_ALIGN_PAGE);
     z->mask = 0;
-    z->zsm = 0;
+    z->zsm = GS_ZBUF_32;
 
     graph_initialize(frame->address, frame->width, frame->height,
                     frame->psm, 0, 0);
@@ -78,7 +80,7 @@ typedef struct {
 typedef struct {
     Vec3 v[3];
     float depth;
-    int sx[3], sy[3];
+    int sx[3], sy[3];\n    unsigned int sz[3];
     unsigned char r, g, b;
 } SceneTriangle;
 
@@ -257,17 +259,17 @@ static qword_t *draw_triangle3d(qword_t *q, const SceneTriangle *t)
     PACK_GIFTAG(q, GIF_SET_PRIM(3,0,0,0,0,0,0,0,0), GIF_REG_PRIM); q++;
     PACK_GIFTAG(q, GIF_SET_RGBAQ(t->r,t->g,t->b,0x80,0x3F800000), GIF_REG_RGBAQ); q++;
     PACK_GIFTAG(q, GIF_SET_XYZ((t->sx[0]<<4)+(2048<<4),
-                               (t->sy[0]<<4)+(2048<<4),0), GIF_REG_XYZ2); q++;
+                               (t->sy[0]<<4)+(2048<<4),t->sz[0]), GIF_REG_XYZ2); q++;
     PACK_GIFTAG(q, GIF_SET_XYZ((t->sx[1]<<4)+(2048<<4),
-                               (t->sy[1]<<4)+(2048<<4),0), GIF_REG_XYZ2); q++;
+                               (t->sy[1]<<4)+(2048<<4),t->sz[1]), GIF_REG_XYZ2); q++;
     PACK_GIFTAG(q, GIF_SET_XYZ((t->sx[2]<<4)+(2048<<4),
-                               (t->sy[2]<<4)+(2048<<4),0), GIF_REG_XYZ2); q++;
+                               (t->sy[2]<<4)+(2048<<4),t->sz[2]), GIF_REG_XYZ2); q++;
     return q;
 }
 static void render_scene(packet_t *packet, framebuffer_t *frame,
                          float player_x, float player_z,
                          float camera_yaw, float camera_pitch,
-                         int mission_stage, float stamina)
+                         int mission_stage, float stamina, zbuffer_t *z)
 {
     qword_t *q;
     int i,j;
@@ -277,9 +279,14 @@ static void render_scene(packet_t *packet, framebuffer_t *frame,
     dma_wait_fast();
     q=packet->data;
 
+    /* Clear depth each frame: all-pass depth test, full-screen Z=0. */
+    q=draw_disable_tests(q,0,z);
+    q=draw_rect(q,0,0,SCREEN_W,SCREEN_H,0,0,0);
+    q=draw_enable_tests(q,0,z);
+
     /* Sky and distant water color are background; the land itself is real
        perspective-projected 3D triangles with height variation. */
-    q=draw_clear(q,88,184,232,frame->width,frame->height,0,0,0);
+    q=draw_clear(q,0,0,0,frame->width,frame->height,88,184,232);
     q=draw_rect(q,0,0,640,210,88,184,232);
     q=draw_rect(q,0,210,640,282,28,132,186);
 
@@ -295,6 +302,14 @@ static void render_scene(packet_t *packet, framebuffer_t *frame,
             if(cz<8.0f) { valid=0; break; }
             t->sx[j]=(int)(320.0f+cx*270.0f/cz);
             t->sy[j]=(int)(224.0f-cy*270.0f/cz);
+            {
+                float normalized_depth=cz/600.0f;
+                if(normalized_depth>1.0f)normalized_depth=1.0f;
+                if(normalized_depth<0.0f)normalized_depth=0.0f;
+                /* Reverse depth: closer vertices receive larger GS Z values. */
+                t->sz[j]=(unsigned int)(16777215.0f-
+                                      normalized_depth*16777214.0f);
+            }
             if(t->sx[j]<0)t->sx[j]=0;
             if(t->sx[j]>639)t->sx[j]=639;
             if(t->sy[j]<0)t->sy[j]=0;
@@ -321,6 +336,8 @@ static void render_scene(packet_t *packet, framebuffer_t *frame,
             q=draw_triangle3d(q,&scene_triangles[i]);
     }
 
+    /* HUD is rendered without depth testing so it stays over the 3D scene. */
+    q=draw_disable_tests(q,0,z);
     /* First-person HUD remains a 2D overlay over the 3D world. */
     q=draw_rect(q,316,222,324,224,238,238,228);
     q=draw_rect(q,319,218,321,228,238,238,228);
@@ -477,7 +494,7 @@ int main(void)
         }
 
         render_scene(packet, &frame, player_x, player_z,
-                     camera_yaw, camera_pitch, mission_stage, stamina);
+                     camera_yaw, camera_pitch, mission_stage, stamina, &z);
     }
 
     return 0;
