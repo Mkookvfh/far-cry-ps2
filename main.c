@@ -222,14 +222,16 @@ int main(void)
             int ly = (int)pad.ljoy_v;
             int rx = (int)pad.rjoy_h;
             int ry = (int)pad.rjoy_v;
-            move_x = (lx - 128) / 100.0f;
-            move_z = (ly - 128) / 100.0f;
-            if (move_x < -1.0f) move_x = -1.0f;
-            if (move_x > 1.0f) move_x = 1.0f;
-            if (move_z < -1.0f) move_z = -1.0f;
-            if (move_z > 1.0f) move_z = 1.0f;
-            if (abs(lx - 128) < 18) move_x = 0.0f;
-            if (abs(ly - 128) < 18) move_z = 0.0f;
+            if (abs(lx - 128) >= 18) {
+                move_x = (lx - 128) / 100.0f;
+                if (move_x < -1.0f) move_x = -1.0f;
+                if (move_x > 1.0f) move_x = 1.0f;
+            }
+            if (abs(ly - 128) >= 18) {
+                move_z = (ly - 128) / 100.0f;
+                if (move_z < -1.0f) move_z = -1.0f;
+                if (move_z > 1.0f) move_z = 1.0f;
+            }
             look_x = (rx - 128) / 100.0f;
             look_y = (ry - 128) / 100.0f;
             if (look_x < -1.0f) look_x = -1.0f;
