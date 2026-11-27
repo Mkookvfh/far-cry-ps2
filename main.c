@@ -2,6 +2,7 @@
 #include <tamtypes.h>
 #include <kernel.h>
 #include <sifrpc.h>
+#include <loadfile.h>
 #include <libpad.h>
 
 static unsigned char padBuf[256] __attribute__((aligned(64)));
@@ -9,6 +10,7 @@ static unsigned char padBuf[256] __attribute__((aligned(64)));
 int main(void)
 {
     SifInitRpc(0);
+    SifLoadFileInit();
 
     int sio = SifLoadModule("rom0:XSIO2MAN", 0, NULL);
     if (sio < 0) {
@@ -62,8 +64,6 @@ int main(void)
             if (player_z > 48.0f) player_z = 48.0f;
         }
 
-        /* Keep the early controller prototype from busy-spinning. */
-        DelayThread(16667);
     }
 
     return 0;
