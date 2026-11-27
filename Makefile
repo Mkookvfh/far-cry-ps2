@@ -1,5 +1,5 @@
 EE_BIN = far-cry-ps2.elf
-EE_OBJS = main.o src/game/player_movement.o
+EE_OBJS = main.o src/game/player_movement.o src/game/player_collision.o
 EE_LIBS = -lpad -ldraw -lgraph -ldma -lpacket -lkernel -lm
 EE_CFLAGS += -O2 -G0 -Wall -Wextra
 
