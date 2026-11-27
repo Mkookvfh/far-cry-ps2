@@ -4,7 +4,7 @@
 
 Evolve Island of Ashes from its single-file PS2SDK prototype into an original tropical-island FPS using the proven architecture of the Quake II PS2 port as a technical base/reference. The intended game remains single-player and uses original Island of Ashes maps, textures, models, audio, characters, and mission content.
 
-Upstream reference: https://github.com/glampert/quake2-ps2
+Reference port reviewed: Quake II PS2 (GPL-2.0).
 
 ## Important status
 
@@ -13,7 +13,7 @@ Upstream reference: https://github.com/glampert/quake2-ps2
 - The Quake II PS2 port is a complete engine port, while the current prototype is a small custom renderer. A real integration is an engine migration, not a few lines of code.
 - Do not add Quake II retail data files or copyrighted game assets.
 
-## Systems to adapt, in order
+## Safe integration scope\n\nThis branch focuses on non-combat engine systems: renderer architecture, movement/collision, input, world loading, models/animation, audio, save/load, and performance. Combat and weapon gameplay systems are outside this work.\n\n## Systems to adapt, in order
 
 ### 1. PS2 platform/backend seam
 Use the upstream backend pattern to separate engine-facing APIs from PS2-specific implementation. Keep platform services behind small interfaces for graphics, pad input, filesystem, audio, timers, and save storage.
