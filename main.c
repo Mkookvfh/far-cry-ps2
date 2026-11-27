@@ -185,7 +185,7 @@ int main(void)
 
     framebuffer_t frame;
     zbuffer_t z;
-    packet_t *packet = packet_init(256, PACKET_NORMAL);
+    packet_t *packet = packet_init(512, PACKET_NORMAL);
     if (packet == NULL) {
         printf("Could not allocate graphics packet\n");
         return 1;
