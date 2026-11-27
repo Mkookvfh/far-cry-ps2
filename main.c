@@ -41,8 +41,6 @@ static void init_graphics(framebuffer_t *frame, zbuffer_t *z, packet_t *packet)
 
     qword_t *q = packet->data;
     q = draw_setup_environment(q, 0, frame, z);
-    q = draw_primitive_xyoffset(q, 0, 2048 - (SCREEN_W / 2),
-                                2048 - (SCREEN_H / 2));
     q = draw_finish(q);
     dma_channel_send_normal(DMA_CHANNEL_GIF, packet->data,
                             q - packet->data, 0, 0);
