@@ -312,8 +312,8 @@ int main(void)
             float dz = target_z[mission_stage] - player_z;
             if (dx * dx + dz * dz < 28.0f * 28.0f) {
                 mission_stage++;
-                printf("Trail checkpoint: %d / 3\\n", mission_stage);
-                if (mission_stage == 3) printf("Island trail complete!\\n");
+                printf("Trail checkpoint: %d / 3\n", mission_stage);
+                if (mission_stage == 3) printf("Island trail complete!\n");
             }
         }
 
