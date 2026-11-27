@@ -80,7 +80,8 @@ typedef struct {
 typedef struct {
     Vec3 v[3];
     float depth;
-    int sx[3], sy[3];\n    unsigned int sz[3];
+    int sx[3], sy[3];
+    unsigned int sz[3];
     unsigned char r, g, b;
 } SceneTriangle;
 
