@@ -217,7 +217,7 @@ static void add_village(void)
     add_box(486.0f,yt+42.0f,184.0f,32.0f,3.0f,18.0f,98,70,44);
 }
 
-static void build_scene(float player_x, float player_z, int mission_stage)
+static void build_scene(int mission_stage)
 {
     scene_triangle_count=0;
     add_terrain();
@@ -249,11 +249,6 @@ static void camera_transform(Vec3 v, float px, float py, float pz,
     *cx=right;
     *cy=dy*cp-forward*sp;
     *cz=dy*sp+forward*cp;
-}
-
-static int triangle_farther(const SceneTriangle *a, const SceneTriangle *b)
-{
-    return a->depth > b->depth;
 }
 
 static qword_t *draw_triangle3d(qword_t *q, const SceneTriangle *t)
@@ -288,7 +283,7 @@ static void render_scene(packet_t *packet, framebuffer_t *frame,
     q=draw_rect(q,0,0,640,210,88,184,232);
     q=draw_rect(q,0,210,640,282,28,132,186);
 
-    build_scene(player_x,player_z,mission_stage);
+    build_scene(mission_stage);
     for(i=0;i<scene_triangle_count;i++) {
         SceneTriangle *t=&scene_triangles[i];
         float sum=0.0f;
