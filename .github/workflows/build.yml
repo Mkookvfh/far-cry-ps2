@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+      - name: Install build utility
+        run: apk add --no-cache make
       - name: Build with PS2SDK
         run: |
           test -n "$PS2SDK"
