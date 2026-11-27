@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <tamtypes.h>
 #include <kernel.h>
 #include <sifrpc.h>
@@ -67,11 +68,12 @@ static qword_t *draw_rect(qword_t *q, int x1, int y1, int x2, int y2,
 }
 
 static void render_scene(packet_t *packet, framebuffer_t *frame,
-                         float player_x, float player_z)
+                         float player_x, float player_z,
+                         float camera_yaw, float camera_pitch)
 {
     qword_t *q;
-    int camera_shift = ((int)player_x - 320) / 12;
-    int depth_shift = ((int)player_z - 224) / 18;
+    int camera_shift = ((int)player_x - 320) / 12 + (int)(camera_yaw * 2.0f);
+    int depth_shift = ((int)player_z - 224) / 18 + (int)(camera_pitch * 0.8f);
 
     dma_wait_fast();
     q = packet->data;
@@ -197,6 +199,8 @@ int main(void)
 
     float player_x = (ISLAND_MIN_X + ISLAND_MAX_X) * 0.5f;
     float player_z = (ISLAND_MIN_Z + ISLAND_MAX_Z) * 0.5f;
+    float camera_yaw = 0.0f;
+    float camera_pitch = 0.0f;
     printf("Island of Ashes - first-person island exploration prototype\n");
     printf("D-pad / left stick: move the first-person camera\n");
 
@@ -204,6 +208,8 @@ int main(void)
     while (1) {
         float move_x = 0.0f;
         float move_z = 0.0f;
+        float look_x = 0.0f;
+        float look_y = 0.0f;
 
         if (padGetState(0, 0) == PAD_STATE_STABLE &&
             padRead(0, 0, &pad)) {
@@ -214,10 +220,24 @@ int main(void)
 
             int lx = (int)pad.ljoy_h;
             int ly = (int)pad.ljoy_v;
-            if (lx < 96) move_x = -1.0f;
-            else if (lx > 160) move_x = 1.0f;
-            if (ly < 96) move_z = -1.0f;
-            else if (ly > 160) move_z = 1.0f;
+            int rx = (int)pad.rjoy_h;
+            int ry = (int)pad.rjoy_v;
+            move_x = (lx - 128) / 100.0f;
+            move_z = (ly - 128) / 100.0f;
+            if (move_x < -1.0f) move_x = -1.0f;
+            if (move_x > 1.0f) move_x = 1.0f;
+            if (move_z < -1.0f) move_z = -1.0f;
+            if (move_z > 1.0f) move_z = 1.0f;
+            if (abs(lx - 128) < 18) move_x = 0.0f;
+            if (abs(ly - 128) < 18) move_z = 0.0f;
+            look_x = (rx - 128) / 100.0f;
+            look_y = (ry - 128) / 100.0f;
+            if (look_x < -1.0f) look_x = -1.0f;
+            if (look_x > 1.0f) look_x = 1.0f;
+            if (look_y < -1.0f) look_y = -1.0f;
+            if (look_y > 1.0f) look_y = 1.0f;
+            if (abs(rx - 128) < 18) look_x = 0.0f;
+            if (abs(ry - 128) < 18) look_y = 0.0f;
         }
 
         if (move_x != 0.0f && move_z != 0.0f) {
@@ -225,14 +245,26 @@ int main(void)
             move_z *= 0.7071f;
         }
 
-        player_x += move_x * 2.0f;
-        player_z += move_z * 2.0f;
+        /* Right stick changes the view; movement follows the facing direction. */
+        camera_yaw += look_x * 1.8f;
+        camera_pitch += look_y * 1.2f;
+        if (camera_yaw < -120.0f) camera_yaw = -120.0f;
+        if (camera_yaw > 120.0f) camera_yaw = 120.0f;
+        if (camera_pitch < -35.0f) camera_pitch = -35.0f;
+        if (camera_pitch > 35.0f) camera_pitch = 35.0f;
+
+        float yaw_radians = camera_yaw * 0.0174532925f;
+        float world_dx = move_x * cosf(yaw_radians) + move_z * sinf(yaw_radians);
+        float world_dz = -move_x * sinf(yaw_radians) - move_z * cosf(yaw_radians);
+        player_x += world_dx * 2.0f;
+        player_z += world_dz * 2.0f;
         if (player_x < ISLAND_MIN_X) player_x = ISLAND_MIN_X;
         if (player_x > ISLAND_MAX_X) player_x = ISLAND_MAX_X;
         if (player_z < ISLAND_MIN_Z) player_z = ISLAND_MIN_Z;
         if (player_z > ISLAND_MAX_Z) player_z = ISLAND_MAX_Z;
 
-        render_scene(packet, &frame, player_x, player_z);
+        render_scene(packet, &frame, player_x, player_z,
+                     camera_yaw, camera_pitch);
     }
 
     return 0;
