@@ -1,6 +1,6 @@
 EE_BIN = far-cry-ps2.elf
 EE_OBJS = main.o
-EE_LIBS = -lpad -ldraw -lgraph -ldma -lpacket -lkernel
+EE_LIBS = -lpad -ldraw -lgraph -ldma -lpacket -lkernel -lm
 EE_CFLAGS += -O2 -G0 -Wall -Wextra
 
 all: $(EE_BIN)
