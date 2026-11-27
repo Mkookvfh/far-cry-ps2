@@ -1,0 +1,32 @@
+name: PS2 Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-ps2:
+    name: Build PS2 ELF
+    runs-on: ubuntu-latest
+    container:
+      image: ps2dev/ps2dev:latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Build with PS2SDK
+        run: |
+          test -n "$PS2SDK"
+          make clean
+          make
+      - name: Upload ELF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: far-cry-ps2-elf
+          path: far-cry-ps2.elf
+          if-no-files-found: error
