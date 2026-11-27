@@ -227,8 +227,9 @@ int main(void)
     float camera_pitch = 0.0f;
     float stamina = 100.0f;
     int mission_stage = 0;
-    printf("Island of Ashes - first-person island exploration prototype\n");
-    printf("D-pad / left stick: move the first-person camera\n");
+    printf("Island of Ashes - playable exploration slice\n");
+    printf("D-pad / left stick: move | right stick: look | R1: sprint\n");
+    printf("Reach all 3 golden beacons to finish the trail.\n");
 
     struct padButtonStatus pad;
     while (1) {
