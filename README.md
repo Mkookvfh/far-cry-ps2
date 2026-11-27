@@ -19,7 +19,10 @@ Output: `far-cry-ps2.elf`
 ## Current prototype
 
 - PS2SDK startup and controller initialization
-- Basic player movement state from the D-pad / left analog stick
-- Build workflow and artifact output
+- First visible island-map scene rendered with the PS2 Graphics Synthesizer
+- Ocean, beach, layered jungle areas, river, small village, and simple palm silhouettes
+- D-pad / left analog movement with diagonal speed normalization
+- Player marker and basic status bars
+- GitHub Actions build and ELF artifact
 
-This is an early technical foundation, not a complete game. The island scenery, collision, missions, NPCs, and save/load are planned as later original systems.
+This is an early 2D visual exploration milestone, not a complete 3D game. The next steps are a proper 3D camera and terrain, collision, detailed environment assets, NPCs, missions, and save/load.
