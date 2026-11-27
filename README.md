@@ -19,10 +19,11 @@ Output: `far-cry-ps2.elf`
 ## Current prototype
 
 - PS2SDK startup and controller initialization
-- First visible island-map scene rendered with the PS2 Graphics Synthesizer
-- Ocean, beach, layered jungle areas, river, small village, and simple palm silhouettes
-- D-pad / left analog movement with diagonal speed normalization
-- Player marker and basic status bars
+- First-person-style tropical island view with sky, sea, distant hills, jungle, a path, village huts, and lookout tower
+- Simple screen-space perspective scene built from colored shapes for an early PS2 graphics milestone
+- First-person HUD mockup: crosshair, objective panel, minimap, and status bars
+- D-pad / left analog movement that shifts the view through the scene
+- Diagonal movement speed normalization and island movement limits
 - GitHub Actions build and ELF artifact
 
-This is an early 2D visual exploration milestone, not a complete 3D game. The next steps are a proper 3D camera and terrain, collision, detailed environment assets, NPCs, missions, and save/load.
+This is still a 2D screen-space prototype that imitates a first-person view; it is not a true 3D camera or complete game. Next steps include verifying the scene on a PS2 emulator/console, then adding real 3D geometry, camera rotation, collision, environment assets, NPCs, missions, and save/load.
