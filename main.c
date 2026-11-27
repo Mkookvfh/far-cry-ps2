@@ -69,7 +69,8 @@ static qword_t *draw_rect(qword_t *q, int x1, int y1, int x2, int y2,
 
 static void render_scene(packet_t *packet, framebuffer_t *frame,
                          float player_x, float player_z,
-                         float camera_yaw, float camera_pitch)
+                         float camera_yaw, float camera_pitch,
+                         int mission_stage, float stamina)
 {
     qword_t *q;
     int camera_shift = ((int)player_x - 320) / 12 + (int)(camera_yaw * 2.0f);
@@ -140,13 +141,34 @@ static void render_scene(packet_t *packet, framebuffer_t *frame,
     q = draw_rect(q, 504 - camera_shift, 150, 560 - camera_shift, 156,
                   72, 52, 36);
 
+    /* Beacon for the current exploration checkpoint. */
+    if (mission_stage < 3) {
+        static const float target_x[3] = {210.0f, 470.0f, 320.0f};
+        static const float target_z[3] = {130.0f, 330.0f, 90.0f};
+        int beacon_x = 320 + (int)((target_x[mission_stage] - player_x) * 0.55f);
+        int beacon_y = 220 + (int)((target_z[mission_stage] - player_z) * 0.45f);
+        if (beacon_x < 24) beacon_x = 24;
+        if (beacon_x > 616) beacon_x = 616;
+        if (beacon_y < 96) beacon_y = 96;
+        if (beacon_y > 350) beacon_y = 350;
+        q = draw_rect(q, beacon_x - 8, beacon_y - 8, beacon_x + 8, beacon_y + 8,
+                      250, 220, 72);
+        q = draw_rect(q, beacon_x - 2, beacon_y - 18, beacon_x + 2, beacon_y + 18,
+                      250, 244, 190);
+        q = draw_rect(q, beacon_x - 18, beacon_y - 2, beacon_x + 18, beacon_y + 2,
+                      250, 244, 190);
+    } else {
+        q = draw_rect(q, 300, 188, 340, 194, 250, 220, 72);
+    }
+
     /* First-person HUD: crosshair, objective, minimap and status bars. */
     q = draw_rect(q, 316, 222, 324, 224, 238, 238, 228);
     q = draw_rect(q, 319, 218, 321, 228, 238, 238, 228);
     q = draw_rect(q, 18, 18, 244, 68, 12, 34, 48);
     q = draw_rect(q, 28, 28, 44, 44, 244, 192, 54);
     q = draw_rect(q, 52, 26, 218, 34, 242, 242, 236);
-    q = draw_rect(q, 52, 42, 190, 50, 222, 222, 214);
+    q = draw_rect(q, 52, 42, 52 + (mission_stage * 52), 50,
+                  92, 218, 142);
 
     q = draw_rect(q, 548, 18, 622, 92, 14, 38, 50);
     q = draw_rect(q, 556, 26, 614, 84, 42, 116, 82);
@@ -154,7 +176,9 @@ static void render_scene(packet_t *packet, framebuffer_t *frame,
     q = draw_rect(q, 582, 36, 588, 74, 250, 230, 84);
     q = draw_rect(q, 18, 386, 224, 430, 12, 34, 48);
     q = draw_rect(q, 30, 398, 202, 408, 190, 48, 48);
-    q = draw_rect(q, 30, 414, 168, 424, 50, 156, 218);
+    int stamina_width = 30 + (int)(stamina * 1.38f);
+    if (stamina_width > 202) stamina_width = 202;
+    q = draw_rect(q, 30, 414, stamina_width, 424, 50, 156, 218);
     q = draw_rect(q, 420, 386, 622, 430, 12, 34, 48);
     q = draw_rect(q, 434, 398, 602, 408, 228, 184, 70);
     q = draw_rect(q, 434, 414, 560, 424, 190, 190, 182);
@@ -201,6 +225,8 @@ int main(void)
     float player_z = (ISLAND_MIN_Z + ISLAND_MAX_Z) * 0.5f;
     float camera_yaw = 0.0f;
     float camera_pitch = 0.0f;
+    float stamina = 100.0f;
+    int mission_stage = 0;
     printf("Island of Ashes - first-person island exploration prototype\n");
     printf("D-pad / left stick: move the first-person camera\n");
 
@@ -210,6 +236,7 @@ int main(void)
         float move_z = 0.0f;
         float look_x = 0.0f;
         float look_y = 0.0f;
+        int sprint_requested = 0;
 
         if (padGetState(0, 0) == PAD_STATE_STABLE &&
             padRead(0, 0, &pad)) {
@@ -217,6 +244,7 @@ int main(void)
             if (!(pad.btns & PAD_RIGHT)) move_x += 1.0f;
             if (!(pad.btns & PAD_UP))    move_z -= 1.0f;
             if (!(pad.btns & PAD_DOWN))  move_z += 1.0f;
+            if (!(pad.btns & PAD_R1)) sprint_requested = 1;
 
             int lx = (int)pad.ljoy_h;
             int ly = (int)pad.ljoy_v;
@@ -258,15 +286,38 @@ int main(void)
         float yaw_radians = camera_yaw * 0.0174532925f;
         float world_dx = move_x * cosf(yaw_radians) + move_z * sinf(yaw_radians);
         float world_dz = -move_x * sinf(yaw_radians) - move_z * cosf(yaw_radians);
-        player_x += world_dx * 2.0f;
-        player_z += world_dz * 2.0f;
+        int moving = (move_x != 0.0f || move_z != 0.0f);
+        int sprinting = sprint_requested && moving && stamina > 0.0f;
+        float move_speed = sprinting ? 3.2f : 2.0f;
+        if (sprinting) {
+            stamina -= 0.55f;
+            if (stamina < 0.0f) stamina = 0.0f;
+        } else {
+            stamina += 0.24f;
+            if (stamina > 100.0f) stamina = 100.0f;
+        }
+        player_x += world_dx * move_speed;
+        player_z += world_dz * move_speed;
         if (player_x < ISLAND_MIN_X) player_x = ISLAND_MIN_X;
         if (player_x > ISLAND_MAX_X) player_x = ISLAND_MAX_X;
         if (player_z < ISLAND_MIN_Z) player_z = ISLAND_MIN_Z;
         if (player_z > ISLAND_MAX_Z) player_z = ISLAND_MAX_Z;
 
+        /* Three checkpoint trail; reaching each beacon advances the objective. */
+        if (mission_stage < 3) {
+            static const float target_x[3] = {210.0f, 470.0f, 320.0f};
+            static const float target_z[3] = {130.0f, 330.0f, 90.0f};
+            float dx = target_x[mission_stage] - player_x;
+            float dz = target_z[mission_stage] - player_z;
+            if (dx * dx + dz * dz < 28.0f * 28.0f) {
+                mission_stage++;
+                printf("Trail checkpoint: %d / 3\\n", mission_stage);
+                if (mission_stage == 3) printf("Island trail complete!\\n");
+            }
+        }
+
         render_scene(packet, &frame, player_x, player_z,
-                     camera_yaw, camera_pitch);
+                     camera_yaw, camera_pitch, mission_stage, stamina);
     }
 
     return 0;
